@@ -4,6 +4,7 @@
 **/pom.xml
 **/*.fsh
 **/*.sh
+**/*.zip
 **/LICENSE.txt
 **/CONTRIBUTING.md
 **/WriterGuidelines.md
@@ -27,4 +28,8 @@ quickstarts/jboss-as-quickstart/kitchensink-cordova/shared/**
 quickstarts/jboss-as-quickstart/guide/guide.asciidoc
 stack/plugin-jdf/src/**
 stack/stacks-client/src/**
-
+vendor
+Gemfile
+Gemfile.lock
+.bundle
+Guardfile
