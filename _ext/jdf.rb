@@ -58,48 +58,34 @@ class Artifact
 end
 
 module Awestruct
-  module Handlers
-    class AsciidocHandler
+  module Extensions
+    class Asciidoc
 
-      def rendered_content(context, with_layouts=true)
-        out_file="#{site.tmp_dir}/asciidoc#{relative_source_path.gsub(/\.([^.]+)$/, '.html')}"
-        if !File.exists?(out_file)
-          FileUtils.mkdir_p(File.dirname(out_file))
-          puts "Processing asciidoc #{relative_source_path} -> #{out_file}"
-          cmd="asciidoc -b html5 -a pygments -a icons -a iconsdir='#{site.base_url}/images' -a imagesdir='../' -o '#{out_file}' #{context.page.source_path}"
-          `#{cmd} `
-        end
-        output = File.open(out_file).read
+   def execute(site)
 
-        extract_metadata(context.page, output)
+     site.pages.each do |page|
+       if page.content_syntax == :asciidoc
+         extract_metadata(page, page.content)
+       end
+     end
+   end
        
-      end
-
-      # Proofing our call to asciidoc for future versions
-      def execute_shell(command, input = nil)
-        Open3.popen3(command) do |stdin, stdout, stderr, thrd|
-          stdin.puts input unless input.nil?
-          stdin.close
-          SystemCallError.new("Error invoking #{command}, #{stderr.read}", thrd.value.exitstatus)
-          out = stdout.read
-        end
-      rescue Errno::EPIPE
-        ""
-      end
-
       def extract_metadata(page, output)
+        puts page.output_path
+        puts output #[0..500]
         html = Nokogiri::HTML(output)
         # Asciidoc renders a load of stuff at the top of the page, which we need to extract bits of (e.g. author, title) but we want to dump it for rendering
-        page.source_title = html.css("h1").first.text
-        guide_content = html.css('div#content').first 
+        page.source_title = html.xpath("//h2").first.text
+        guide_content = html.css('div.content').first
         guide_content['id'] = 'guide-content'
         guide_content['class'] = 'asciidoc'
         # Extract authors
-        author = html.css('span#author').first
+        author = html.css('span.author').first
         if author
           page.source_author = [ author.text ]
         end
-        page.source_summary = first_x_words(guide_content.css('p').first.text, 25, '').gsub("\n", '')
+
+        page.source_summary = first_x_words(guide_content.xpath('//p').first().text, 25, '').gsub("\n", '')
 
         # rebuild links
         guide_content.css('a').each do |a|
@@ -120,14 +106,16 @@ module Awestruct
 end
 
 module Awestruct
-  module Handlers
-    class MarkdownHandler
+  module Extensions
+    class Markdown
 
-      def rendered_content(context, with_layouts=true)
-        doc = RDiscount.new( delegate.rendered_content( context, with_layouts ) )
-        extract_metadata(context.page, doc.to_html)
-      end
-
+   def execute(site)
+     site.pages.each do |page|
+       if page.content_syntax == :markdown
+         extract_metadata(page, page.content)
+       end
+     end
+   end
       def extract_metadata(page, output)
         
         html = Nokogiri::HTML(output)
